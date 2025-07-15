@@ -13,9 +13,14 @@ from datetime import datetime
 # ===============================
 # CONFIGURATION VARIABLES
 # ===============================
-MODEL_NAME = "HuggingFaceTB/SmolLM2-135M-Instruct"
-QUERY = "Explain the concept of machine learning in simple terms."
-MAX_NEW_TOKENS = 200
+MODEL_NAME = "google/gemma-3-1b-it"
+MESSAGES = [
+    {
+        "role": "user",
+        "content": "Simulate a conversation between a customer and a customer support executive at RAM Bank. The customer name is Darshil and the supports name is Sharon.\nDarshil is facing difficulty with logging into his netbanking. Sharon helps him successfully trouble shoot his steps."
+    }
+]
+MAX_NEW_TOKENS = 2048  # Maximum number of new tokens to generate
 TEMPERATURE = 0.7
 DO_SAMPLE = True
 TOP_P = 0.9
@@ -90,7 +95,10 @@ def print_config():
     """Print the current configuration"""
     print_separator("CONFIGURATION")
     print(f"Model: {MODEL_NAME}")
-    print(f"Query: {QUERY}")
+    print(f"Messages: {len(MESSAGES)} message(s)")
+    for i, msg in enumerate(MESSAGES):
+        print(f"  Message {i+1} - Role: {msg['role']}")
+        print(f"  Content: {msg['content'][:100]}{'...' if len(msg['content']) > 100 else ''}")
     print(f"Max New Tokens: {MAX_NEW_TOKENS}")
     print(f"Temperature: {TEMPERATURE}")
     print(f"Top-p: {TOP_P}")
@@ -142,18 +150,22 @@ def load_model_and_tokenizer():
     
     return model, tokenizer, device, load_time
 
-def format_prompt(query):
-    """Format the query as a chat prompt for instruction models"""
-    # SmolLM2-Instruct expects a specific format
-    formatted_prompt = f"<|im_start|>user\n{query}<|im_end|>\n<|im_start|>assistant\n"
+def format_prompt(messages, tokenizer):
+    """Format the messages using the tokenizer's chat template"""
+    # Use the tokenizer's built-in chat template for proper formatting
+    formatted_prompt = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
     return formatted_prompt
 
 def run_inference(model, tokenizer, device):
     """Run inference with streaming output"""
     print_separator("INFERENCE")
     
-    # Format the prompt
-    formatted_query = format_prompt(QUERY)
+    # Format the prompt using chat template
+    formatted_query = format_prompt(MESSAGES, tokenizer)
     print(f"Formatted prompt:\n{formatted_query}")
     print_separator("STREAMING OUTPUT")
     
